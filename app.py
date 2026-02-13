@@ -389,6 +389,24 @@ LEVEL_HIERARCHY = {
     'P': ['FR', 'E', 'A', 'P', 'MC'],
 }
 
+def extract_cross_references(text):
+    """Extract referenced protocol IDs from text."""
+    # Match "Protocol X.X", "Protocol X.XA", "protocol 2.3A/P" etc.
+    pattern = r'[Pp]rotocol\s+(\d+\.\d+[A-Z]?(?:/[A-Z])?)'
+    refs = set()
+    for m in re.finditer(pattern, text):
+        ref_id = m.group(1)
+        # Handle "3.4A/P" -> add both 3.4A and 3.4P
+        if '/' in ref_id:
+            base, suffix = ref_id.split('/')
+            # base is like "3.4A", suffix is like "P"
+            refs.add(base)
+            refs.add(base[:-1] + suffix)
+        else:
+            refs.add(ref_id)
+    return sorted(refs)
+
+
 def format_protocol_html(text, active_level=None):
     lines = text.split('\n')
     html_parts = []
@@ -465,7 +483,14 @@ def format_protocol_html(text, active_level=None):
         else:
             html_parts.append(f'<div class="plain">{stripped}</div>')
     
-    return '\n'.join(html_parts)
+    result = '\n'.join(html_parts)
+    
+    # Highlight cross-references in the HTML
+    def highlight_ref(m):
+        return f'<span style="color:#d9534f;font-weight:600;text-decoration:underline;text-decoration-style:dotted;">{m.group(0)}</span>'
+    result = re.sub(r'[Pp]rotocol\s+\d+\.\d+[A-Z]?(?:/[A-Z])?', highlight_ref, result)
+    
+    return result
 
 
 # ---------- Session state ----------
@@ -508,6 +533,19 @@ if st.session_state.view == 'detail' and st.session_state.selected_id:
     # Formatted content filtered by provider level
     html = format_protocol_html(proto['content'], active_level=detail_level)
     st.markdown(f'<div class="protocol-body">{html}</div>', unsafe_allow_html=True)
+    
+    # Cross-references section
+    refs = extract_cross_references(proto['content'])
+    # Filter to only refs that exist and aren't self
+    valid_refs = [r for r in refs if r in protocols_dict and r != proto['id']]
+    if valid_refs:
+        st.markdown('<div class="thin-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Referenced Protocols</div>', unsafe_allow_html=True)
+        for ref_id in valid_refs:
+            ref_proto = protocols_dict[ref_id]
+            if st.button(f"**{ref_id}** · {ref_proto['title']}", key=f"ref_{ref_id}"):
+                show_protocol(ref_id)
+                st.rerun()
     
     st.markdown('<div class="thin-divider"></div>', unsafe_allow_html=True)
     if st.button("← Back", key="back_bottom"):
