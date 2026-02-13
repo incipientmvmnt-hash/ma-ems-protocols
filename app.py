@@ -21,19 +21,39 @@ html, body, [class*="css"] {
     font-size: 16px;
 }
 
-/* Force light theme */
+/* Force light theme everywhere */
+*, *::before, *::after {
+    color-scheme: light !important;
+}
 [data-testid="stAppViewContainer"],
 [data-testid="stApp"],
-.main,
-.stApp {
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stVerticalBlock"],
+.main, .stApp, .block-container,
+[data-testid="stHeader"],
+section[data-testid="stSidebar"] {
     background-color: #ffffff !important;
     color: #1d1d1f !important;
 }
-[data-testid="stHeader"] {
-    background-color: #ffffff !important;
+div[data-testid="stMarkdownContainer"] {
+    color: #1d1d1f !important;
 }
-section[data-testid="stSidebar"] {
-    background-color: #f5f5f7 !important;
+div[data-testid="stTextInput"] input {
+    color: #1d1d1f !important;
+}
+/* Segmented control */
+div[data-testid="stSegmentedControl"] {
+    background-color: #f0f0f0 !important;
+}
+div[data-testid="stSegmentedControl"] button {
+    color: #1d1d1f !important;
+    background-color: transparent !important;
+}
+div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+    background-color: #ffffff !important;
+    color: #d9534f !important;
 }
 
 /* Hide Streamlit chrome */
