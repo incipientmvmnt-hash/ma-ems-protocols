@@ -204,6 +204,17 @@ else:
     st.markdown("# 🚑 MA EMS Protocols")
     st.caption("Statewide Treatment Protocols v2026.1")
     
+    # Provider level selector
+    level_options = ["All Levels", "EMT", "AEMT", "Paramedic"]
+    level_map = {"EMT": "E", "AEMT": "A", "Paramedic": "P", "All Levels": None}
+    selected_level = st.segmented_control(
+        "I am a:",
+        options=level_options,
+        default="All Levels",
+        key="provider_level",
+    )
+    active_level = level_map.get(selected_level)
+    
     # Search bar
     search = st.text_input(
         "Search",
@@ -213,10 +224,16 @@ else:
     
     query = search.strip().lower() if search else ""
     
+    # Filter by provider level first
+    if active_level:
+        level_filtered = [p for p in protocols_list if active_level in p.get('provider_levels', []) or 'ALL' in p.get('provider_levels', [])]
+    else:
+        level_filtered = protocols_list
+    
     # Filter protocols
     if query:
         scored = []
-        for proto in protocols_list:
+        for proto in level_filtered:
             title_lower = proto['title'].lower()
             id_lower = proto['id'].lower()
             content_lower = proto['content'].lower()
@@ -247,7 +264,7 @@ else:
         scored.sort(key=lambda x: (-x[0], x[1]['id']))
         filtered = [p for _, p in scored]
     else:
-        filtered = protocols_list
+        filtered = level_filtered
     
     # Show count
     if query:
