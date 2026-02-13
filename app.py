@@ -367,28 +367,81 @@ protocols_dict, protocols_list = load_protocols()
 
 
 # ---------- Format protocol content for display ----------
-def format_protocol_html(text):
+def get_section_level(line):
+    """Determine which provider level a standing orders section belongs to."""
+    if re.match(r'^(FIRST RESPONDER|FR)\s+STANDING\s+ORDER', line, re.I):
+        return 'FR'
+    elif re.match(r'^EMT\s+STANDING\s+ORDER', line, re.I):
+        return 'E'
+    elif re.match(r'^ADVANCED\s+EMT\s+STANDING\s+ORDER', line, re.I):
+        return 'A'
+    elif re.match(r'^PARAMEDIC\s+STANDING\s+ORDER', line, re.I):
+        return 'P'
+    elif re.match(r'^MEDICAL\s+CONTROL', line, re.I):
+        return 'MC'
+    return None
+
+# Level hierarchy: each level can do everything below them
+LEVEL_HIERARCHY = {
+    'FR': ['FR'],
+    'E': ['FR', 'E'],
+    'A': ['FR', 'E', 'A'],
+    'P': ['FR', 'E', 'A', 'P', 'MC'],
+}
+
+def format_protocol_html(text, active_level=None):
     lines = text.split('\n')
     html_parts = []
+    
+    current_section_level = None  # Track which provider section we're in
+    skipping = False  # Whether we're skipping content for level filter
+    
+    # Determine which sections to show based on level hierarchy
+    if active_level:
+        allowed = LEVEL_HIERARCHY.get(active_level, ['FR', 'E', 'A', 'P', 'MC'])
+    else:
+        allowed = None  # Show all
     
     for line in lines:
         stripped = line.strip()
         if not stripped:
             continue
         
+        # Check if this is a standing orders header
+        section_level = get_section_level(stripped)
+        if section_level:
+            current_section_level = section_level
+            if allowed and section_level not in allowed:
+                skipping = True
+            else:
+                skipping = False
+        
+        # Check if this is a non-provider section (general content, notes, etc.)
+        if stripped.isupper() and len(stripped) > 4 and not stripped.startswith('•') and not section_level:
+            current_section_level = None
+            skipping = False
+        if 'CAUTION' in stripped.upper() or 'RED FLAG' in stripped.upper():
+            skipping = False
+        if stripped.upper().startswith('NOTE:') or stripped.upper().startswith('PEARLS:') or stripped.upper().startswith('PEARL:'):
+            skipping = False
+        
+        # Skip content not relevant to selected level
+        if skipping:
+            continue
+        
         # Caution / red flag
         if 'CAUTION' in stripped.upper() or 'RED FLAG' in stripped.upper():
             html_parts.append(f'<div class="caution-block">⚠️ {stripped}</div>')
         # Standing orders headers
-        elif re.match(r'^(FIRST RESPONDER|FR)\s+STANDING\s+ORDER', stripped, re.I):
+        elif section_level == 'FR':
             html_parts.append(f'<div class="standing-orders fr">{stripped}</div>')
-        elif re.match(r'^EMT\s+STANDING\s+ORDER', stripped, re.I):
+        elif section_level == 'E':
             html_parts.append(f'<div class="standing-orders emt">{stripped}</div>')
-        elif re.match(r'^ADVANCED\s+EMT\s+STANDING\s+ORDER', stripped, re.I):
+        elif section_level == 'A':
             html_parts.append(f'<div class="standing-orders aemt">{stripped}</div>')
-        elif re.match(r'^PARAMEDIC\s+STANDING\s+ORDER', stripped, re.I):
+        elif section_level == 'P':
             html_parts.append(f'<div class="standing-orders paramedic">{stripped}</div>')
-        elif re.match(r'^MEDICAL\s+CONTROL', stripped, re.I):
+        elif section_level == 'MC':
             html_parts.append(f'<div class="standing-orders mc">{stripped}</div>')
         # Section titles (ALL CAPS lines)
         elif stripped.isupper() and len(stripped) > 4 and not stripped.startswith('•'):
@@ -448,8 +501,12 @@ if st.session_state.view == 'detail' and st.session_state.selected_id:
     st.markdown(f'<div class="detail-badges">{badges}</div>', unsafe_allow_html=True)
     st.markdown('<div class="thin-divider"></div>', unsafe_allow_html=True)
     
-    # Formatted content
-    html = format_protocol_html(proto['content'])
+    # Get active level from session state
+    detail_level_map = {"FR": "FR", "EMT": "E", "AEMT": "A", "Paramedic": "P", "All": None}
+    detail_level = detail_level_map.get(st.session_state.get('provider_level', 'All'))
+    
+    # Formatted content filtered by provider level
+    html = format_protocol_html(proto['content'], active_level=detail_level)
     st.markdown(f'<div class="protocol-body">{html}</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="thin-divider"></div>', unsafe_allow_html=True)
@@ -465,8 +522,8 @@ else:
     st.markdown('<div class="app-subtitle">Statewide Treatment Protocols · v2026.1</div>', unsafe_allow_html=True)
     
     # Provider level filter
-    level_options = ["All", "EMT", "AEMT", "Paramedic"]
-    level_map = {"EMT": "E", "AEMT": "A", "Paramedic": "P", "All": None}
+    level_options = ["All", "FR", "EMT", "AEMT", "Paramedic"]
+    level_map = {"FR": "FR", "EMT": "E", "AEMT": "A", "Paramedic": "P", "All": None}
     selected_level = st.segmented_control(
         "Provider Level",
         options=level_options,
