@@ -115,14 +115,16 @@
   "2.5": {
     "id": "2.5",
     "title": "Behavioral Emergencies \u2013 Restraint",
-    "content": "Behavioral Emergencies: Restraint Adult & Pediatric\nE\n/\nA\n/\nP",
+    "content": "Behavioral Emergencies: Restraint\nAdult & Pediatric\n\nIn accordance with M.G.L. c. 111C, \u00a718, the following guidelines may be followed to restrain a patient only when the patient presents an immediate or serious threat of bodily harm to him/herself or others.\n\nAdults (or emancipated minors as defined in A/R 5-610) who are competent with the functional capacity to understand the nature and effects of their actions and/or decisions have the right to refuse treatment and/or transport. Do not restrain these individuals.\n\nEMT/ADVANCED EMT/PARAMEDIC STANDING ORDERS\n\n\u2022 Follow Protocol 2.4 Behavioral Emergencies.\n\u2022 Use the least restrictive method that assures the safety of the patient and others.\n\u2022 Use only soft restraints (leather restraints only if made with soft padding inside).\n\u2022 Remind law enforcement that for ambulance transport, patients who are handcuffed must be handcuffed in front (not behind) or to the stretcher and the key must be readily available for removal; if needed.\n\u2022 Apply restraints in a way that allows for airway, breathing, and circulation assessment.\n\u2022 Never restrain a patient in a prone position or use equipment that forms a \"sandwich\" around the patient.\n\u2022 Have a minimum of four (4) trained personnel coordinate the restraint effort and consider involving parents if patient is a child.\n\u2022 Secure the patient so that major sets of muscle groups cannot be used together, restraining the lower extremities to the stretcher first around the ankles and across the thighs with soft restraints and stretcher straps.\n\u2022 Restrain the patient's torso and upper extremities with one arm up and one arm down with soft restraints and stretcher straps; do not impair circulation.\n\u2022 Consider cervical-spine immobilization to minimize violent head/body movements.\n\u2022 Pad under patient's head to prevent self-harm.\n\u2022 If the patient has been secured to a backboard or scoop stretcher, remove and secure to the ambulance stretcher.\n\u2022 Transport OB patients in a semi-reclining or left lateral position.\n\u2022 Monitor/record vital signs every 5 minutes, ensuring patient's airway remains clear.\n\u2022 Consider placing a non-rebreather mask (use only at 15 lpm) or a face mask (NOT a P100/N95) on the spitting patient's face.\n\u2022 Unless necessary for patient treatment, do not remove restraints until care is transferred at the receiving facility or condition has changed to necessitate removal.\n\u2022 Notify receiving facility and tell them that patient is restrained.\n\u2022 Document restraint use details in the patient care report, including:\no Reason for restraint use\no Time of application\no Type(s) of restraints used, in addition to cot straps\no Patient position\no Neurovascular evaluation of extremities\no Issues encountered during transport\no Other treatment rendered\no Police and/or other agency assistance",
     "pages": [
       22
     ],
     "section": "Section 2 \u2013 Medical Protocols",
     "section_num": "2",
     "provider_levels": [
-      "ALL"
+      "E",
+      "A",
+      "P"
     ]
   },
   "2.6A": {
