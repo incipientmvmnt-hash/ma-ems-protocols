@@ -19,7 +19,21 @@ st.markdown("""
 html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     font-size: 16px;
-    color: #1d1d1f;
+}
+
+/* Force light theme */
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"],
+.main,
+.stApp {
+    background-color: #ffffff !important;
+    color: #1d1d1f !important;
+}
+[data-testid="stHeader"] {
+    background-color: #ffffff !important;
+}
+section[data-testid="stSidebar"] {
+    background-color: #f5f5f7 !important;
 }
 
 /* Hide Streamlit chrome */
@@ -275,6 +289,15 @@ div[data-testid="stButton"] button:hover {
 }
 div[data-testid="stButton"] button p {
     font-size: 0.95rem !important;
+    color: #1d1d1f !important;
+}
+
+/* Force all text colors for light mode */
+p, span, div, li, label, h1, h2, h3, h4 {
+    color: #1d1d1f !important;
+}
+.section-header, .app-subtitle {
+    color: #86868b !important;
 }
 
 /* Segmented control override */
