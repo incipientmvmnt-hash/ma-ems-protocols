@@ -7,48 +7,79 @@ from pathlib import Path
 st.set_page_config(
     page_title="MA EMS Protocols",
     page_icon="🚑",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# ---------- Custom CSS for mobile-friendly, big text ----------
+# ---------- Custom CSS ----------
 st.markdown("""
 <style>
-/* Global */
-html, body, [class*="css"] { font-size: 18px; }
-h1 { font-size: 2rem !important; }
-h2 { font-size: 1.6rem !important; }
-h3 { font-size: 1.3rem !important; }
+/* Clean, mobile-first design */
+html, body, [class*="css"] { font-size: 17px; }
+h1 { font-size: 1.8rem !important; margin-bottom: 0.3rem !important; }
+h2 { font-size: 1.4rem !important; }
+h3 { font-size: 1.2rem !important; }
 
-/* Sidebar nav links */
-.sidebar-link {
+/* Search input - big and prominent */
+div[data-testid="stTextInput"] input {
+    font-size: 1.2rem !important;
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+    border: 2px solid #ddd !important;
+}
+div[data-testid="stTextInput"] input:focus {
+    border-color: #d9534f !important;
+    box-shadow: 0 0 0 2px rgba(217,83,79,0.2) !important;
+}
+
+/* Protocol list items */
+.proto-item {
     display: block;
-    padding: 6px 8px;
-    margin: 2px 0;
-    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 4px 0;
+    border-radius: 10px;
+    border: 1px solid #e8e8e8;
+    background: white;
+    cursor: pointer;
     text-decoration: none;
     color: inherit;
-    font-size: 0.95rem;
-    line-height: 1.3;
-    cursor: pointer;
+    transition: all 0.15s;
 }
-.sidebar-link:hover { background: rgba(151,166,195,0.15); }
+.proto-item:hover { 
+    background: #f8f9fa; 
+    border-color: #d9534f;
+    transform: translateX(2px);
+}
+.proto-id {
+    font-weight: 800;
+    color: #d9534f;
+    font-size: 1rem;
+    margin-right: 8px;
+}
+.proto-title {
+    font-size: 1.05rem;
+    font-weight: 500;
+}
+.proto-section-tag {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 2px;
+}
 
-/* Provider level badges */
+/* Provider badges */
 .badge { 
     display: inline-block; padding: 2px 8px; border-radius: 4px; 
-    font-size: 0.8rem; font-weight: 700; margin-right: 4px; 
+    font-size: 0.75rem; font-weight: 700; margin-right: 3px; 
 }
-.badge-fr { background: #4a90d9; color: white; }
-.badge-e { background: #f0ad4e; color: black; }
-.badge-a { background: #5cb85c; color: white; }
-.badge-p { background: #d9534f; color: white; }
-.badge-all { background: #777; color: white; }
+.badge-FR { background: #4a90d9; color: white; }
+.badge-E { background: #f0ad4e; color: black; }
+.badge-A { background: #5cb85c; color: white; }
+.badge-P { background: #d9534f; color: white; }
 
 /* Caution blocks */
 .caution-block {
     background: #fff3cd; border-left: 5px solid #dc3545;
-    padding: 12px 16px; margin: 12px 0; border-radius: 4px;
+    padding: 12px 16px; margin: 10px 0; border-radius: 4px;
     font-weight: 600; color: #856404;
 }
 
@@ -60,23 +91,30 @@ h3 { font-size: 1.3rem !important; }
     word-wrap: break-word;
 }
 
-/* Search results count */
-.result-count { color: #888; font-size: 0.9rem; margin-bottom: 1rem; }
-
-/* Section headers in sidebar */
-.section-header {
-    font-weight: 700; font-size: 0.9rem; color: #666;
-    margin-top: 16px; margin-bottom: 4px; padding: 4px 8px;
-    text-transform: uppercase; letter-spacing: 0.5px;
-    border-bottom: 1px solid #ddd;
+/* Back button */
+.back-btn button {
+    font-size: 1.1rem !important;
+    padding: 10px 20px !important;
 }
 
-/* Make buttons look like links on mobile */
-div[data-testid="stButton"] button {
-    text-align: left !important;
-    padding: 8px 12px !important;
-    font-size: 1rem !important;
+/* Section dividers */
+.section-divider {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: #d9534f;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 16px 0 6px 4px;
+    border-bottom: 2px solid #d9534f;
+    margin-top: 20px;
 }
+
+/* Hide streamlit menu & footer for clean look */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+
+/* Highlighted match text */
+mark { background: #fff3cd; padding: 1px 3px; border-radius: 3px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,203 +126,157 @@ def load_protocols():
         st.error("protocols_parsed.json not found. Run parse_protocols.py first.")
         st.stop()
     with open(p) as f:
-        return json.load(f)
+        data = json.load(f)
+    # Build a flat sorted list
+    protos = []
+    for pid, proto in data.items():
+        proto['_id'] = pid
+        protos.append(proto)
+    # Sort by protocol ID numerically
+    def sort_key(p):
+        m = re.match(r'(\d+)\.(\d+)([A-Z]?)', p['id'])
+        if m:
+            return (int(m.group(1)), int(m.group(2)), m.group(3))
+        return (99, 99, p['id'])
+    protos.sort(key=sort_key)
+    return {p['_id']: p for p in protos}, protos
 
-protocols = load_protocols()
+protocols_dict, protocols_list = load_protocols()
 
-# ---------- Provider level helpers ----------
-LEVEL_ORDER = ['FR', 'E', 'A', 'P', 'ALL']
-LEVEL_LABELS = {
-    'FR': 'First Responder', 'E': 'EMT', 'A': 'AEMT', 
-    'P': 'Paramedic', 'ALL': 'All Levels'
-}
-LEVEL_CSS = {'FR': 'fr', 'E': 'e', 'A': 'a', 'P': 'p', 'ALL': 'all'}
+# ---------- Session state ----------
+if 'view' not in st.session_state:
+    st.session_state.view = 'list'  # 'list' or 'detail'
+if 'selected_id' not in st.session_state:
+    st.session_state.selected_id = None
 
-def level_badges(levels):
-    return " ".join(
-        f'<span class="badge badge-{LEVEL_CSS.get(l,"all")}">{l}</span>'
-        for l in levels
-    )
+def show_protocol(pid):
+    st.session_state.selected_id = pid
+    st.session_state.view = 'detail'
 
-def format_content(text):
-    """Format protocol content with caution highlighting."""
-    # Highlight CAUTION lines
-    lines = text.split('\n')
+def go_back():
+    st.session_state.view = 'list'
+    st.session_state.selected_id = None
+
+# ---------- DETAIL VIEW ----------
+if st.session_state.view == 'detail' and st.session_state.selected_id:
+    proto = protocols_dict.get(st.session_state.selected_id)
+    if not proto:
+        st.error("Protocol not found")
+        go_back()
+        st.rerun()
+    
+    # Back button
+    if st.button("← Back to Protocols", type="secondary"):
+        go_back()
+        st.rerun()
+    
+    # Header
+    st.markdown(f"# {proto['id']} — {proto['title']}")
+    
+    # Provider badges
+    badges = " ".join(f'<span class="badge badge-{l}">{l}</span>' for l in proto.get('provider_levels', []))
+    if badges:
+        st.markdown(badges, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Content with caution highlighting
+    content = proto['content']
+    lines = content.split('\n')
     formatted = []
-    in_caution = False
     for line in lines:
         if 'CAUTION' in line.upper() or 'RED FLAG' in line.upper():
             formatted.append(f'<div class="caution-block">⚠️ {line}</div>')
-            in_caution = True
-        elif in_caution and line.strip() and not line.strip().startswith(('•', '–', '-', 'E', 'A', 'P', 'FR')):
-            formatted.append(f'<div class="caution-block">{line}</div>')
+        elif 'STANDING ORDER' in line.upper() or 'MEDICAL CONTROL' in line.upper():
+            formatted.append(f'**{line}**')
         else:
-            in_caution = False
-            # Bold standing order headers
-            if 'STANDING ORDER' in line.upper() or 'MEDICAL CONTROL' in line.upper():
-                formatted.append(f'**{line}**')
-            else:
-                formatted.append(line)
-    return '\n'.join(formatted)
-
-# ---------- Sidebar ----------
-with st.sidebar:
-    st.markdown("## 🚑 MA EMS Protocols")
-    st.markdown("**v2026.1**")
+            formatted.append(line)
     
-    # Provider filter
-    level_filter = st.multiselect(
-        "Filter by Provider Level",
-        options=['FR', 'E', 'A', 'P'],
-        format_func=lambda x: LEVEL_LABELS.get(x, x),
-        default=[],
-        help="Show only protocols relevant to selected levels"
+    st.markdown(f'<div class="protocol-content">{"<br>".join(formatted)}</div>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    if st.button("← Back to Protocols", key="back_bottom", type="secondary"):
+        go_back()
+        st.rerun()
+
+# ---------- LIST VIEW ----------
+else:
+    st.markdown("# 🚑 MA EMS Protocols")
+    st.caption("Statewide Treatment Protocols v2026.1")
+    
+    # Search bar
+    search = st.text_input(
+        "Search",
+        placeholder="Search protocols... (e.g., cardiac arrest, seizure, intubation)",
+        label_visibility="collapsed",
     )
     
-    st.markdown("---")
+    query = search.strip().lower() if search else ""
     
-    # Group protocols by section
-    sections = {}
-    for pid, proto in protocols.items():
-        sec = proto['section']
-        if sec not in sections:
-            sections[sec] = []
-        sections[sec].append(proto)
-    
-    for sec_name, sec_protos in sections.items():
-        # Filter by provider level if selected
-        if level_filter:
-            sec_protos = [p for p in sec_protos if 
-                         any(l in p['provider_levels'] for l in level_filter) or 
-                         'ALL' in p['provider_levels']]
-        if not sec_protos:
-            continue
+    # Filter protocols
+    if query:
+        scored = []
+        for proto in protocols_list:
+            title_lower = proto['title'].lower()
+            id_lower = proto['id'].lower()
+            content_lower = proto['content'].lower()
+            
+            score = 0
+            # Exact ID match
+            if query == id_lower:
+                score = 100
+            elif query in id_lower:
+                score = 50
+            # Title match (strongest signal)
+            elif query in title_lower:
+                # Boost if query matches start of a word in title
+                words = title_lower.split()
+                if any(w.startswith(query) for w in words):
+                    score = 30
+                else:
+                    score = 20
+            # Content match
+            elif query in content_lower:
+                # Count occurrences for relevance
+                count = content_lower.count(query)
+                score = min(10, 1 + count)
+            
+            if score > 0:
+                scored.append((score, proto))
         
-        st.markdown(f'<div class="section-header">{sec_name}</div>', unsafe_allow_html=True)
-        for proto in sec_protos:
+        scored.sort(key=lambda x: (-x[0], x[1]['id']))
+        filtered = [p for _, p in scored]
+    else:
+        filtered = protocols_list
+    
+    # Show count
+    if query:
+        st.caption(f"{len(filtered)} result{'s' if len(filtered) != 1 else ''}")
+    
+    # Display protocols grouped by section (or flat if searching)
+    if query:
+        # Flat list for search results - no section headers, just results
+        for proto in filtered:
             if st.button(
-                f"{proto['id']} – {proto['title'][:50]}",
-                key=f"nav_{proto['id']}",
+                f"**{proto['id']}** — {proto['title']}",
+                key=f"p_{proto['id']}",
                 use_container_width=True,
             ):
-                st.session_state['selected'] = proto['id']
-                st.session_state['search'] = ''
-
-# ---------- Main content ----------
-# Search bar - prominent at top
-search = st.text_input(
-    "🔍 Search protocols",
-    value=st.session_state.get('search', ''),
-    placeholder="Type to search... (e.g., cardiac arrest, seizure, epinephrine)",
-    key="search_input",
-)
-
-if search != st.session_state.get('search', ''):
-    st.session_state['search'] = search
-    st.session_state.pop('selected', None)
-
-selected_id = st.session_state.get('selected', None)
-
-# ---------- Search results ----------
-if search:
-    query = search.lower()
-    results = []
-    for pid, proto in protocols.items():
-        # Filter by provider level
-        if level_filter:
-            if not (any(l in proto['provider_levels'] for l in level_filter) or 
-                    'ALL' in proto['provider_levels']):
-                continue
-        
-        title_match = query in proto['title'].lower()
-        id_match = query in proto['id'].lower()
-        content_match = query in proto['content'].lower()
-        
-        if title_match or id_match or content_match:
-            # Score: title/id matches rank higher
-            score = 0
-            if id_match: score += 10
-            if title_match: score += 5
-            if content_match: score += 1
-            results.append((score, proto))
-    
-    results.sort(key=lambda x: -x[0])
-    
-    st.markdown(f'<div class="result-count">{len(results)} result{"s" if len(results) != 1 else ""} for "{search}"</div>', unsafe_allow_html=True)
-    
-    if results:
-        for score, proto in results:
-            col1, col2 = st.columns([5, 1])
-            with col1:
-                if st.button(
-                    f"**{proto['id']}** – {proto['title']}",
-                    key=f"search_{proto['id']}",
-                    use_container_width=True,
-                ):
-                    st.session_state['selected'] = proto['id']
-                    st.rerun()
-            with col2:
-                st.markdown(level_badges(proto['provider_levels']), unsafe_allow_html=True)
+                show_protocol(proto['_id'])
+                st.rerun()
     else:
-        st.info("No protocols found. Try different keywords.")
-
-# ---------- Display selected protocol ----------
-elif selected_id and selected_id in protocols:
-    proto = protocols[selected_id]
-    
-    # Header
-    st.markdown(f"# {proto['id']} – {proto['title']}")
-    st.markdown(level_badges(proto['provider_levels']), unsafe_allow_html=True)
-    st.markdown("---")
-    
-    # Content
-    content = format_content(proto['content'])
-    st.markdown(f'<div class="protocol-content">{content}</div>', unsafe_allow_html=True)
-
-# ---------- Home screen ----------
-else:
-    st.markdown("# 🚑 Massachusetts EMS Protocols")
-    st.markdown("### Statewide Treatment Protocols v2026.1")
-    st.markdown("---")
-    
-    st.markdown("**Quick access:** Use the search bar above or open the sidebar (☰) to browse by section.")
-    st.markdown("")
-    
-    # Show section overview as quick links
-    sections_short = {
-        '1': ('🏥', 'General Patient Care'),
-        '2': ('💊', 'Medical Protocols'),
-        '3': ('❤️', 'Cardiac Emergencies'),
-        '4': ('🩹', 'Trauma Protocols'),
-        '5': ('🫁', 'Airway Protocols'),
-        '6': ('👨‍⚕️', 'Medical Director Options'),
-        '7': ('📋', 'Policies & Procedures'),
-        '8': ('🔥', 'Special Operations'),
-    }
-    
-    cols = st.columns(2)
-    for i, (sec_num, (icon, name)) in enumerate(sections_short.items()):
-        sec_protocols = [p for p in protocols.values() if p.get('section_num') == sec_num]
-        with cols[i % 2]:
-            with st.expander(f"{icon} Section {sec_num} – {name} ({len(sec_protocols)})"):
-                for proto in sec_protocols:
-                    if st.button(
-                        f"{proto['id']} – {proto['title'][:45]}",
-                        key=f"home_{proto['id']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state['selected'] = proto['id']
-                        st.rerun()
-    
-    # Appendices
-    app_protocols = [p for p in protocols.values() if p.get('section_num') == 'A']
-    if app_protocols:
-        with st.expander(f"📎 Appendices ({len(app_protocols)})"):
-            for proto in app_protocols:
-                if st.button(
-                    f"{proto['id']} – {proto['title'][:45]}",
-                    key=f"home_{proto['id']}",
-                    use_container_width=True,
-                ):
-                    st.session_state['selected'] = proto['id']
-                    st.rerun()
+        # Grouped by section
+        current_section = None
+        for proto in filtered:
+            sec = proto.get('section', '')
+            if sec != current_section:
+                current_section = sec
+                st.markdown(f'<div class="section-divider">{sec}</div>', unsafe_allow_html=True)
+            
+            if st.button(
+                f"**{proto['id']}** — {proto['title']}",
+                key=f"p_{proto['id']}",
+                use_container_width=True,
+            ):
+                show_protocol(proto['_id'])
+                st.rerun()
